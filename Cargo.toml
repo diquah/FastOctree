@@ -1,0 +1,8 @@
+[package]
+name = "FastOctree"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+fixed-typed-arena = "0.3.3"
+glam = "0.29.2"
