@@ -64,9 +64,9 @@ impl<'t> Drop for Octree<'t> {
 }
 
 enum OctreeCell<'c> {
-    FilledCell(FilledOctreeCell<'c>),
-    EmptyCell(EmptyOctreeCell<'c>),
-    EmptyChildlessCell,
+    Filled(FilledCellData<'c>),
+    Hollow(HollowCellData<'c>),
+    Empty,
 }
 
 impl<'c> OctreeCell<'c> {
@@ -174,23 +174,35 @@ impl<'c> OctreeCell<'c> {
                 volumes,
             );
 
-            cell_arena
-                .borrow_mut()
-                .alloc(OctreeCell::EmptyCell(EmptyOctreeCell {
-                    a, b, c, d, e, f, g, h
-                }))
+            // Prune away paths that don't have any volumes.
+            if matches!(a, OctreeCell::Empty)
+                && matches!(b, OctreeCell::Empty)
+                && matches!(c, OctreeCell::Empty)
+                && matches!(d, OctreeCell::Empty)
+                && matches!(e, OctreeCell::Empty)
+                && matches!(f, OctreeCell::Empty)
+                && matches!(g, OctreeCell::Empty)
+                && matches!(h, OctreeCell::Empty) {
+                    cell_arena.borrow_mut().alloc(OctreeCell::Empty)
+            } else {
+                cell_arena
+                    .borrow_mut()
+                    .alloc(OctreeCell::Hollow(HollowCellData {
+                        a, b, c, d, e, f, g, h
+                    }))
+            }
         } else if volumes_inside_cell.len() == 0 {
-            cell_arena.borrow_mut().alloc(OctreeCell::EmptyChildlessCell)
+            cell_arena.borrow_mut().alloc(OctreeCell::Empty)
         } else {
             let finalized_volumes_in_cell = vec_arena.borrow_mut().alloc(Vec::with_capacity(volumes_inside_cell.len()));
             finalized_volumes_in_cell.append(&mut volumes_inside_cell);
 
-            cell_arena.borrow_mut().alloc(OctreeCell::FilledCell(FilledOctreeCell(finalized_volumes_in_cell)))
+            cell_arena.borrow_mut().alloc(OctreeCell::Filled(FilledCellData(finalized_volumes_in_cell)))
         }
     }
 }
 
-struct EmptyOctreeCell<'c> {
+struct HollowCellData<'c> {
     a: &'c OctreeCell<'c>,
     b: &'c OctreeCell<'c>,
     c: &'c OctreeCell<'c>,
@@ -201,7 +213,7 @@ struct EmptyOctreeCell<'c> {
     h: &'c OctreeCell<'c>,
 }
 
-struct FilledOctreeCell<'c>(&'c Vec<&'c dyn Volume>);
+struct FilledCellData<'c>(&'c Vec<&'c dyn Volume>);
 
 #[cfg(test)]
 mod tests {
