@@ -104,11 +104,12 @@ impl<'c> OctreeCell<'c> {
             let mut subregions_min = [IVec3::ZERO; 8];
             let mut subregions_max = [IVec3::ZERO; 8];
 
-            for i in 0..8 {
+            subregions_min.iter_mut().zip(subregions_max.iter_mut()).enumerate().for_each(|(i, (min, max))| {
+                let i = i as i32;
                 let corner_offset = IVec3::new(i & 1, (i >> 1) & 1, (i >> 2) & 1);
-                subregions_min[i as usize] = min_bound + corner_offset * (midpoint - max_bound);
-                subregions_max[i as usize] = midpoint + corner_offset * (midpoint - max_bound);
-            }
+                *min = min_bound + corner_offset * (midpoint - max_bound);
+                *max = midpoint + corner_offset * (midpoint - max_bound);
+            });
 
             let a = OctreeCell::build_recursively(
                 cell_arena.clone(),
